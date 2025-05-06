@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PHAR 526 Final Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .question {
+      margin-bottom: 25px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 15px;
+    }
+    .feedback {
+      display: none;
+      margin-top: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>PHAR 526 Practice Quiz</h1>
+
+  <div class="question">
+    <strong>1. Which of the following is a direct non-medical cost?</strong><br>
+    <label><input type="radio" name="q1" onclick="showFeedback(this, false)"> A. Surgery fee</label><br>
+    <label><input type="radio" name="q1" onclick="showFeedback(this, false)"> B. Prescription copay</label><br>
+    <label><input type="radio" name="q1" onclick="showFeedback(this, true)"> C. Transportation to the clinic</label><br>
+    <label><input type="radio" name="q1" onclick="showFeedback(this, false)"> D. Lost workdays</label><br>
+    <div class="feedback">✅ Correct! Transportation is a direct non-medical cost.</div>
+  </div>
+
+  <div class="question">
+    <strong>2. Why is discounting applied in pharmacoeconomic studies?</strong><br>
+    <label><input type="radio" name="q2" onclick="showFeedback(this, false)"> A. To reduce medication costs</label><br>
+    <label><input type="radio" name="q2" onclick="showFeedback(this, true)"> B. To convert future costs/outcomes to present value</label><br>
+    <label><input type="radio" name="q2" onclick="showFeedback(this, false)"> C. To eliminate inflation effects</label><br>
+    <label><input type="radio" name="q2" onclick="showFeedback(this, false)"> D. To prioritize new treatments</label><br>
+    <div class="feedback">✅ Correct! Discounting accounts for the time value of money.</div>
+  </div>
+
+  <script>
+    function showFeedback(input, isCorrect) {
+      const question = input.closest(".question");
+      const feedback = question.querySelector(".feedback");
+
+      feedback.style.display = "block";
+      if (isCorrect) {
+        feedback.style.color = "green";
+        feedback.innerHTML = "✅ Correct!";
+      } else {
+        feedback.style.color = "red";
+        feedback.innerHTML = "❌ Incorrect. Try again or check the correct answer.";
+      }
+    }
+  </script>
+</body>
+</html>
