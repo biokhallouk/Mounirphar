@@ -26,45 +26,43 @@ html,body{margin:0;height:100%;background:#eef4f7;font-family:system-ui,-apple-s
         if(t.indexOf('function top(')!==-1){source=t;break;}
       }
       if(!source){return;}
-      source=source.replace(/function top\(/g,'function topEntry(').replace(/\btop\(/g,'topEntry(');
-      w.eval(source);
 
-      // One-time cleanup for Mounir's accidental duplicate submission.
-      // Keeps the newest Mounir response and permanently deletes any older Mounir response(s).
-      if(!w.__mounirCleanupInstalled && typeof w.fetchResponses==='function'){
-        w.__mounirCleanupInstalled=true;
-        var originalFetchResponses=w.fetchResponses;
-        w.fetchResponses=async function(){
-          var API='https://mantledb.sh/v2';
-          var NS='phar718-a2-2026-k7m4q9z2';
-          try{
-            var lr=await w.fetch(API+'/list/'+NS,{cache:'no-store'});
-            if(lr.ok){
-              var lj=await lr.json();
-              var entries=(lj.entries||[]).filter(function(e){return (e.path||'').indexOf('responses/')===0;});
-              var records=[];
-              await Promise.all(entries.map(async function(e){
-                try{
-                  var rr=await w.fetch(API+'/'+NS+'/'+e.path,{cache:'no-store'});
-                  if(rr.ok){var data=await rr.json();records.push({path:e.path,updated_at:e.updated_at||0,data:data});}
-                }catch(_e){}
-              }));
-              var mine=records.filter(function(r){return String((r.data&&r.data.name)||'').trim().toLowerCase()==='mounir';});
-              if(mine.length>1){
-                mine.sort(function(a,b){
-                  var ta=Date.parse((a.data&&a.data.at)||'')||Number(a.updated_at)||0;
-                  var tb=Date.parse((b.data&&b.data.at)||'')||Number(b.updated_at)||0;
-                  return tb-ta;
-                });
-                for(var j=1;j<mine.length;j++){
-                  try{await w.fetch(API+'/'+NS+'/'+mine[j].path,{method:'DELETE'});}catch(_e){}
-                }
-              }
-            }
-          }catch(_e){}
-          return originalFetchResponses();
-        };
-      }
+      // Fix the browser-reserved window.top naming conflict.
+      source=source.replace(/function top\(/g,'function topEntry(').replace(/\btop\(/g,'topEntry(');
+
+      // Replace the response loader so an accidental duplicate named Mounir is
+      // reduced to the newest response before any counts or dashboard output are built.
+      // It also attempts to permanently delete the older record from MantleDB.
+      source=source.replace(
+        /async function fetchResponses\(\)\{[\s\S]*?\}\nfunction count/,
+        `async function fetchResponses(){
+          const r=await fetch(\`${'${API}'}/list/${'${NS}'}\`,{cache:'no-store'});
+          if(!r.ok)throw new Error(String(r.status));
+          const j=await r.json();
+          const paths=(j.entries||[]).map(x=>x.path).filter(p=>p.startsWith('responses/'));
+          const records=(await Promise.all(paths.map(async p=>{
+            try{
+              const q=await fetch(\`${'${API}'}/${'${NS}'}/${'${p}'}\`,{cache:'no-store'});
+              if(!q.ok)return null;
+              return {path:p,data:await q.json()};
+            }catch{return null}
+          }))).filter(Boolean).filter(x=>x.data&&(x.data.type==='phar718-v3'||x.data.type==='phar718-v2'));
+
+          const mine=records.filter(x=>String(x.data.name||'').trim().toLowerCase()==='mounir');
+          if(mine.length>1){
+            mine.sort((a,b)=>(Date.parse(b.data.at||'')||0)-(Date.parse(a.data.at||'')||0));
+            const oldPaths=new Set(mine.slice(1).map(x=>x.path));
+            await Promise.all([...oldPaths].map(async p=>{
+              try{await fetch(\`${'${API}'}/${'${NS}'}/${'${p}'}\`,{method:'DELETE'});}catch{}
+            }));
+            return records.filter(x=>!oldPaths.has(x.path)).map(x=>x.data);
+          }
+          return records.map(x=>x.data);
+        }
+function count`
+      );
+
+      w.eval(source);
     }catch(e){showError('The survey hit an initialization error: '+(e&&e.message?e.message:e));}
   });
 })();
