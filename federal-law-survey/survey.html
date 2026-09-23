@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PHAR 718 Federal Drug Law Decision Lab</title>
+<style>
+html,body{margin:0;height:100%;background:#eef4f7;font-family:system-ui,-apple-system,Segoe UI,sans-serif}#app{width:100%;height:100%;border:0;display:block}.msg{position:fixed;z-index:9999;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:12px;background:#7b1f1f;color:#fff;font-weight:700;display:none}
+</style>
+</head>
+<body>
+<iframe id="app" src="./index.html" title="PHAR 718 survey"></iframe>
+<div id="msg" class="msg"></div>
+<script>
+(function(){
+  var frame=document.getElementById('app');
+  var msg=document.getElementById('msg');
+  function showError(t){msg.textContent=t;msg.style.display='block';}
+  frame.addEventListener('load',function(){
+    try{
+      var w=frame.contentWindow,d=frame.contentDocument;
+      if(!w||!d){showError('The survey could not initialize. Refresh this page once.');return;}
+      var scripts=d.getElementsByTagName('script'),source='';
+      for(var i=0;i<scripts.length;i++){
+        var t=scripts[i].textContent||'';
+        if(t.indexOf('function top(')!==-1){source=t;break;}
+      }
+      if(!source){return;}
+      source=source.replace(/function top\(/g,'function topEntry(').replace(/\btop\(/g,'topEntry(');
+      w.eval(source);
+    }catch(e){showError('The survey hit an initialization error: '+(e&&e.message?e.message:e));}
+  });
+})();
+</script>
+</body>
+</html>
