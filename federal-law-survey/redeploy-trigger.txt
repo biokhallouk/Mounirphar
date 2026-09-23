@@ -1,0 +1,2 @@
+Redeploy trigger for Vercel after Root Directory was set to federal-law-survey.
+Triggered 2026-09-22.
