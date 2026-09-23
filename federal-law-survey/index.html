@@ -28,6 +28,43 @@ html,body{margin:0;height:100%;background:#eef4f7;font-family:system-ui,-apple-s
       if(!source){return;}
       source=source.replace(/function top\(/g,'function topEntry(').replace(/\btop\(/g,'topEntry(');
       w.eval(source);
+
+      // One-time cleanup for Mounir's accidental duplicate submission.
+      // Keeps the newest Mounir response and permanently deletes any older Mounir response(s).
+      if(!w.__mounirCleanupInstalled && typeof w.fetchResponses==='function'){
+        w.__mounirCleanupInstalled=true;
+        var originalFetchResponses=w.fetchResponses;
+        w.fetchResponses=async function(){
+          var API='https://mantledb.sh/v2';
+          var NS='phar718-a2-2026-k7m4q9z2';
+          try{
+            var lr=await w.fetch(API+'/list/'+NS,{cache:'no-store'});
+            if(lr.ok){
+              var lj=await lr.json();
+              var entries=(lj.entries||[]).filter(function(e){return (e.path||'').indexOf('responses/')===0;});
+              var records=[];
+              await Promise.all(entries.map(async function(e){
+                try{
+                  var rr=await w.fetch(API+'/'+NS+'/'+e.path,{cache:'no-store'});
+                  if(rr.ok){var data=await rr.json();records.push({path:e.path,updated_at:e.updated_at||0,data:data});}
+                }catch(_e){}
+              }));
+              var mine=records.filter(function(r){return String((r.data&&r.data.name)||'').trim().toLowerCase()==='mounir';});
+              if(mine.length>1){
+                mine.sort(function(a,b){
+                  var ta=Date.parse((a.data&&a.data.at)||'')||Number(a.updated_at)||0;
+                  var tb=Date.parse((b.data&&b.data.at)||'')||Number(b.updated_at)||0;
+                  return tb-ta;
+                });
+                for(var j=1;j<mine.length;j++){
+                  try{await w.fetch(API+'/'+NS+'/'+mine[j].path,{method:'DELETE'});}catch(_e){}
+                }
+              }
+            }
+          }catch(_e){}
+          return originalFetchResponses();
+        };
+      }
     }catch(e){showError('The survey hit an initialization error: '+(e&&e.message?e.message:e));}
   });
 })();
